@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import emailjs from "@emailjs/browser";
+import { SiHuggingface } from "react-icons/si";
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 const C = {
@@ -116,27 +118,34 @@ const SVGS = {
   sklearn:  "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
   pandas:   "M9 3H7v7h2V3zm8 0h-2v7h2V3zM9 14H7v7h2v-7zm8 0h-2v7h2v-7zm-4-5h-2v10h2V9z",
   jupyter:  "M14.25 2.175C8.047 2.175 3 7.222 3 13.425S8.047 24.675 14.25 24.675s11.25-5.047 11.25-11.25-5.047-11.25-11.25-11.25zm0 20.25c-4.963 0-9-4.037-9-9s4.037-9 9-9 9 4.037 9 9-4.037 9-9 9zm.75-13.5h-1.5v6h1.5v-6zm0 7.5h-1.5v1.5h1.5v-1.5z",
-  huggingface:"M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"
+huggingface: "M18.285 5.715a.57.57 0 0 0-.006 0c-.84 0-1.56.45-1.957 1.122a4.392 4.392 0 0 0-1.662-.325 4.392 4.392 0 0 0-1.663.325A2.25 2.25 0 0 0 11.04 5.73a2.25 2.25 0 0 0-2.25 2.25c0 .195.03.384.074.567A5.25 5.25 0 0 0 6.75 13.5a5.25 5.25 0 0 0 5.25 5.25 5.25 5.25 0 0 0 5.25-5.25 5.25 5.25 0 0 0-2.114-4.953c.044-.183.074-.372.074-.567a2.25 2.25 0 0 0-2.25-2.25zM9 10.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm6 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm-5.25 3h4.5a.375.375 0 0 1 0 .75c-.469.563-1.125.75-2.25.75s-1.781-.188-2.25-.75a.375.375 0 0 1 0-.75z",
 };
 
 // ── SOCIAL ICON ───────────────────────────────────────────────────────────────
 const SocialIcon = ({ type, href }) => {
-  const [hov,setHov] = useState(false);
-  const path = SVGS[type] || SVGS.github;
+  const [hov, setHov] = useState(false);
+
+  const iconMap = {
+    huggingface: <SiHuggingface size={17}/>,
+    // keep SVG path fallback for others
+  };
+
   return (
     <a href={href} target="_blank" rel="noreferrer"
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{
-        width:38,height:38,
+        width:38, height:38,
         background:hov?C.orange:"rgba(255,255,255,0.05)",
         border:`1px solid ${hov?C.orange:"rgba(255,255,255,0.1)"}`,
-        borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",
-        textDecoration:"none",transition:"all 0.2s",cursor:"pointer",
-        color:hov?"#fff":C.gray,flexShrink:0,
+        borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center",
+        textDecoration:"none", transition:"all 0.2s", cursor:"pointer",
+        color:hov?"#fff":C.gray, flexShrink:0,
       }}>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-        <path d={path}/>
-      </svg>
+      {iconMap[type] ?? (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <path d={SVGS[type] || SVGS.github}/>
+        </svg>
+      )}
     </a>
   );
 };
@@ -203,7 +212,7 @@ const Nav = ({ active, setActive }) => {
 const Hero = ({ setActive }) => {
   const [typed,setTyped]=useState("");
   const [cur,setCur]=useState(true);
-  const FULL="A Full Stack & ML Developer.";
+  const FULL="A Full Stack-AI workflow Builder & Developer.";
   useEffect(()=>{
     let i=0;
     const t=setInterval(()=>{setTyped(FULL.slice(0,++i));if(i>=FULL.length)clearInterval(t);},60);
@@ -231,9 +240,9 @@ const Hero = ({ setActive }) => {
 
       {/* Social sidebar */}
       <div style={{position:"absolute",left:24,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:10}}>
+        <SocialIcon type="huggingface" href="https://huggingface.co/Devmaker25"/>
         <SocialIcon type="github"   href="https://github.com/25Devmaker"/>
         <SocialIcon type="linkedin"  href="https://www.linkedin.com/in/hari-kishan-devmaker"/>
-        <SocialIcon type="huggingface"   href="https://huggingface.co/Devmaker25"/>
       </div>
 
       {/* Left content */}
@@ -243,14 +252,14 @@ const Hero = ({ setActive }) => {
           <span style={{fontFamily:SF,fontSize:13,color:C.gray,letterSpacing:3}}>Hello</span>
         </div>
         <h1 style={{fontFamily:SF,fontWeight:700,fontSize:"clamp(30px,4vw,50px)",color:"#fff",lineHeight:1.2,marginBottom:14}}>
-          I'm <span style={{color:C.orange}}>Dev_Placeholder</span>
+          I'm <span style={{color:C.orange}}>25DEVMAKER</span>
         </h1>
         <p style={{fontFamily:SF,fontSize:14,color:C.gray,marginBottom:10,minHeight:22}}>
           {typed}<span style={{opacity:cur?1:0,color:C.orange}}>|</span>
         </p>
         <p style={{fontFamily:SF,fontSize:14,color:C.grayD,marginBottom:36,lineHeight:1.8}}>
-          Passionate about building intelligent systems and beautiful interfaces.
-          Interning at CodeAlpha — crafting ML models and pixel-perfect UIs.
+          Passionate about building intelligent workflows & systems and beautiful interfaces.
+          Interning at CodeAlpha — crafting AI models fine tuning LLM's and pixel-perfect UIs.
         </p>
         <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
           <OBtn onClick={()=>setActive("PROJECTS")}>Learn more</OBtn>
@@ -355,7 +364,7 @@ const About = () => {
   const works = [
     {title:"Credit Scoring",   sub:"ML · Random Forest",        link:"https://github.com/25Devmaker/code-alpha_tasks"},
     {title:"Disease Prediction",sub:"SVM · Breast Cancer",       link:"https://github.com/25Devmaker/code-alpha_tasks"},
-    {title:"This Portfolio",   sub:"React · Dark Orange theme",  link:"#"},
+    {title:"This Portfolio",   sub:"React · Dark Orange theme",  link:"https://25devmaker.vercel.app/"},
   ];
   return (
     <section style={{minHeight:"100vh",padding:"80px 52px",background:C.bg}}>
@@ -553,21 +562,116 @@ const Projects = () => {
   );
 };
 
+// ── SECURITY HELPERS ──────────────────────────────────────────────────────────
+const sanitize = str => str.trim()
+  .replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/&/g,"&amp;").replace(/"/g,"&quot;")
+  .replace(/'/g,"&#x27;").slice(0,500);
+
+const validators = {
+  name:    v => v.trim().length >= 2,
+  email:   v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
+  phone:   v => v===""||/^\+?[\d\s\-().]{7,15}$/.test(v.trim()),
+  message: v => v.trim().length >= 10,
+};
+
+const ERR_MSG = {
+  name:    "Name must be at least 2 characters",
+  email:   "Please enter a valid email address",
+  phone:   "Please enter a valid phone number",
+  message: "Message must be at least 10 characters",
+};
+
 // ── CONTACT ───────────────────────────────────────────────────────────────────
 const Contact = () => {
-  const [form,setForm]=useState({name:"",email:"",phone:"",location:"",message:""});
-  const [sent,setSent]=useState(false);
-  const submit=()=>{
-    if(form.name&&form.email&&form.message){
-      setSent(true);setTimeout(()=>setSent(false),3500);
-      setForm({name:"",email:"",phone:"",location:"",message:""});
-    }
+  const [form,    setForm]    = useState({name:"",email:"",phone:"",location:"",message:""});
+  const [honey,   setHoney]   = useState("");
+  const [errors,  setErrors]  = useState({});
+  const [sent,    setSent]    = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [attempts,setAttempts]= useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [cooldown,setCooldown]= useState(false);
+  const lastSubmit = useRef(0);
+  const timerRef   = useRef(null);
+
+  const validate = () => {
+    const e={};
+    if(!validators.name(form.name))       e.name    = ERR_MSG.name;
+    if(!validators.email(form.email))     e.email   = ERR_MSG.email;
+    if(!validators.phone(form.phone))     e.phone   = ERR_MSG.phone;
+    if(!validators.message(form.message)) e.message = ERR_MSG.message;
+    setErrors(e);
+    return Object.keys(e).length===0;
   };
-  const iStyle={fontFamily:SF,fontSize:14,background:"rgba(255,255,255,0.04)",color:"#fff",border:`1px solid rgba(255,255,255,0.1)`,borderRadius:8,padding:"12px 16px",width:"100%",transition:"border-color 0.2s"};
+
+  const clearErr = key => setErrors(p=>({...p,[key]:""}));
+
+  const submit = () => {
+    if(honey) return;
+    if(blocked){ alert("Too many attempts. Please wait 5 minutes."); return; }
+    const now = Date.now();
+    if(now - lastSubmit.current < 3000){ setCooldown(true); setTimeout(()=>setCooldown(false),3000); return; }
+    if(attempts >= 3){
+      setBlocked(true);
+      timerRef.current = setTimeout(()=>{ setBlocked(false); setAttempts(0); }, 5*60*1000);
+      return;
+    }
+    if(!validate()) return;
+    setLoading(true);
+    setAttempts(a=>a+1);
+    lastSubmit.current = now;
+
+    emailjs.send(
+      "service_oz6d0y2",    // ← replace with your EmailJS Service ID
+      "template_11r8lbl",   // ← replace with your EmailJS Template ID
+      {
+        name:     sanitize(form.name),
+        email:    form.email.trim().toLowerCase(),
+        phone:    sanitize(form.phone),
+        location: sanitize(form.location),
+        message:  sanitize(form.message),
+      },
+      "2C0lMjumsQ8-n9NtH"     // ← replace with your EmailJS Public Key
+    )
+    .then(()=>{
+      setSent(true);
+      setLoading(false);
+      setForm({name:"",email:"",phone:"",location:"",message:""});
+      setErrors({});
+      setTimeout(()=>setSent(false), 4000);
+    })
+    .catch(()=>{
+      setLoading(false);
+      setErrors(p=>({...p,submit:"Failed to send. Please try again."}));
+    });
+  };
+
+  useEffect(()=>()=>{ if(timerRef.current) clearTimeout(timerRef.current); },[]);
+
+  const iBase = {
+    fontFamily:SF, fontSize:14,
+    background:"rgba(255,255,255,0.04)", color:"#fff",
+    borderRadius:8, padding:"12px 16px", width:"100%",
+    transition:"border-color 0.2s",
+  };
+  const iStyle = key => ({
+    ...iBase,
+    border:`1px solid ${errors[key]?"#ff4444":"rgba(255,255,255,0.1)"}`,
+  });
+
+  const fields = [
+    {key:"name",     ph:"Your Full Name",  label:"Full Name", type:"text"},
+    {key:"email",    ph:"your@email.com",  label:"Email",     type:"email"},
+    {key:"phone",    ph:"+1 234 567 890",  label:"Phone",     type:"tel"},
+    {key:"location", ph:"Your City",       label:"Location",  type:"text"},
+  ];
+
   return (
     <section style={{minHeight:"100vh",padding:"80px 52px",background:C.bgDeep}}>
       <div style={{maxWidth:1000,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 1fr",gap:60,alignItems:"start"}}>
-        {/* Left */}
+
+        {/* Left info */}
         <div style={{animation:"fadeUp 0.7s both"}}>
           <h2 style={{fontFamily:SF,fontSize:26,fontWeight:700,color:"#fff",marginBottom:8}}>Get a quote</h2>
           <div style={{width:48,height:3,background:C.orange,marginBottom:24}}/>
@@ -576,8 +680,8 @@ const Contact = () => {
             Drop me a message and I'll get back to you as soon as possible.
           </p>
           {[
-            {type:"email",    label:"Email",    val:"placeholder@email.com"},
-            {type:"location", label:"Location", val:"Your City, Country"},
+            {type:"email",    label:"Email",    val:"harikishan0058@email.com"},
+            {type:"location", label:"Location", val:"Bengaluru, India"},
             {type:"github",   label:"GitHub",   val:"github.com/25Devmaker"},
           ].map(c=>(
             <div key={c.label} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:18}}>
@@ -595,14 +699,20 @@ const Contact = () => {
             <SocialIcon type="huggingface"   href="https://huggingface.co/Devmaker25"/>
             <SocialIcon type="linkedin"  href="https://www.linkedin.com/in/hari-kishan-devmaker"/>
           </div>
-          {/* Pixel robot decoration */}
-          <div style={{marginTop:32}}>
-            <PixelRobot px={8}/>
+          <div style={{marginTop:32}}><PixelRobot px={8}/></div>
+
+          {/* Security badges */}
+          <div style={{marginTop:28,display:"flex",gap:8,flexWrap:"wrap"}}>
+            {["Spam protected","Rate limited","XSS sanitized"].map(b=>(
+              <span key={b} style={{fontFamily:SF,fontSize:10,color:C.orange,background:"rgba(232,84,26,0.08)",border:`1px solid rgba(232,84,26,0.2)`,borderRadius:20,padding:"4px 10px"}}>
+                ✓ {b}
+              </span>
+            ))}
           </div>
         </div>
 
         {/* Right form */}
-        {sent?(
+        {sent ? (
           <div style={{background:C.bgCard,border:`1px solid ${C.orange}`,borderRadius:12,padding:40,textAlign:"center",boxShadow:`0 0 40px rgba(232,84,26,0.15)`,animation:"popIn 0.4s both"}}>
             <div style={{marginBottom:16,display:"flex",justifyContent:"center"}}>
               <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -612,35 +722,94 @@ const Contact = () => {
             <h3 style={{fontFamily:SF,fontSize:20,fontWeight:600,color:"#fff",marginBottom:8}}>Message Sent!</h3>
             <p style={{fontFamily:SF,fontSize:14,color:C.gray}}>I'll get back to you soon.</p>
           </div>
-        ):(
+        ) : (
           <div style={{background:C.bgCard,border:`1px solid rgba(255,255,255,0.07)`,borderRadius:12,padding:32,animation:"fadeUp 0.7s 0.15s both"}}>
+
+            {/* Honeypot — hidden from humans, traps bots */}
+            <input
+              type="text" value={honey}
+              onChange={e=>setHoney(e.target.value)}
+              style={{display:"none"}} tabIndex="-1" autoComplete="off"
+            />
+
+            {/* Blocked warning */}
+            {blocked && (
+              <div style={{background:"rgba(255,68,68,0.1)",border:"1px solid #ff4444",borderRadius:8,padding:"12px 16px",marginBottom:16,fontFamily:SF,fontSize:13,color:"#ff4444"}}>
+                Too many attempts. Please wait 5 minutes.
+              </div>
+            )}
+
+            {/* Cooldown warning */}
+            {cooldown && (
+              <div style={{background:"rgba(232,84,26,0.1)",border:`1px solid ${C.orange}`,borderRadius:8,padding:"12px 16px",marginBottom:16,fontFamily:SF,fontSize:13,color:C.orange}}>
+                Please wait a moment before sending again.
+              </div>
+            )}
+
+            {/* Attempt counter */}
+            {attempts > 0 && (
+              <div style={{fontFamily:SF,fontSize:11,color:C.grayD,textAlign:"right",marginBottom:12}}>
+                {3 - attempts} attempt{3-attempts!==1?"s":""} remaining
+              </div>
+            )}
+
+            {/* Input grid */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-              {[
-                {key:"name",ph:"Your Full Name",label:"Full Name"},
-                {key:"email",ph:"your@email.com",label:"Email"},
-                {key:"phone",ph:"+1 234 567 890",label:"Phone"},
-                {key:"location",ph:"Your City",label:"Location"},
-              ].map(f=>(
+              {fields.map(f=>(
                 <div key={f.key}>
-                  <div style={{fontFamily:SF,fontSize:11,color:C.gray,marginBottom:6}}>{f.label}</div>
-                  <input placeholder={f.ph} value={form[f.key]} style={iStyle}
-                    onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
-                    onFocus={e=>e.target.style.borderColor=C.orange}
-                    onBlur={e=>e.target.style.borderColor="rgba(255,255,255,0.1)"}
+                  <div style={{fontFamily:SF,fontSize:11,color:errors[f.key]?"#ff4444":C.gray,marginBottom:6}}>{f.label}</div>
+                  <input
+                    type={f.type} placeholder={f.ph} value={form[f.key]}
+                    style={iStyle(f.key)}
+                    onChange={e=>{setForm(p=>({...p,[f.key]:e.target.value}));clearErr(f.key);}}
+                    onFocus={e=>e.target.style.borderColor=errors[f.key]?"#ff4444":C.orange}
+                    onBlur={e=>e.target.style.borderColor=errors[f.key]?"#ff4444":"rgba(255,255,255,0.1)"}
                   />
+                  {errors[f.key]&&(
+                    <span style={{fontFamily:SF,fontSize:11,color:"#ff4444",marginTop:4,display:"block"}}>
+                      ⚠ {errors[f.key]}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
+
+            {/* Message textarea */}
             <div style={{marginBottom:20}}>
-              <div style={{fontFamily:SF,fontSize:11,color:C.gray,marginBottom:6}}>Type your message</div>
-              <textarea rows={4} placeholder="Tell me about your project..." value={form.message}
-                style={{...iStyle,resize:"vertical"}}
-                onChange={e=>setForm(p=>({...p,message:e.target.value}))}
-                onFocus={e=>e.target.style.borderColor=C.orange}
-                onBlur={e=>e.target.style.borderColor="rgba(255,255,255,0.1)"}
+              <div style={{fontFamily:SF,fontSize:11,color:errors.message?"#ff4444":C.gray,marginBottom:6}}>
+                Type your message <span style={{color:C.grayD}}>(min 10 chars)</span>
+              </div>
+              <textarea
+                rows={4} placeholder="Tell me about your project..."
+                value={form.message}
+                style={{...iStyle("message"),resize:"vertical"}}
+                onChange={e=>{setForm(p=>({...p,message:e.target.value}));clearErr("message");}}
+                onFocus={e=>e.target.style.borderColor=errors.message?"#ff4444":C.orange}
+                onBlur={e=>e.target.style.borderColor=errors.message?"#ff4444":"rgba(255,255,255,0.1)"}
               />
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                {errors.message
+                  ? <span style={{fontFamily:SF,fontSize:11,color:"#ff4444"}}>⚠ {errors.message}</span>
+                  : <span/>
+                }
+                <span style={{fontFamily:SF,fontSize:11,color:C.grayD}}>{form.message.length}/500</span>
+              </div>
             </div>
-            <OBtn onClick={submit} style={{width:"100%",display:"block",textAlign:"center"}}>Send message →</OBtn>
+
+            {/* Submit error */}
+            {errors.submit&&(
+              <div style={{background:"rgba(255,68,68,0.1)",border:"1px solid #ff4444",borderRadius:8,padding:"10px 14px",marginBottom:14,fontFamily:SF,fontSize:13,color:"#ff4444"}}>
+                ⚠ {errors.submit}
+              </div>
+            )}
+
+            {/* Submit button */}
+            <OBtn
+              onClick={submit}
+              style={{width:"100%",display:"block",textAlign:"center",opacity:loading||blocked?0.6:1}}
+            >
+              {loading ? "Sending..." : blocked ? "Blocked (5 min)" : "Send message →"}
+            </OBtn>
           </div>
         )}
       </div>
