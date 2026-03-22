@@ -190,7 +190,7 @@ const Nav = ({ active, setActive }) => {
     }}>
       <div style={{fontFamily:SF,fontSize:18,fontWeight:700,color:"#fff",cursor:"pointer",letterSpacing:-0.5}}
         onClick={()=>setActive("HOME")}>
-        Black<span style={{color:C.orange}}>Orange</span>
+        <span style={{color:C.orange}}>Portfolio</span>
       </div>
       <div style={{display:"flex",gap:2}}>
         {["HOME","ABOUT","SKILLS","PROJECTS","CONTACT"].map(it=>(
